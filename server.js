@@ -6,7 +6,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
 app.use(express.static(__dirname));
 
 const client = new OpenAI({
@@ -14,16 +13,15 @@ const client = new OpenAI({
 });
 
 app.post("/chat", async (req, res) => {
-
     try {
         const message = req.body.message;
 
-        const response = await client.chat.completions.create({
+        const result = await client.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
                 {
                     role: "system",
-                    content: "أنت Nexus AI، مساعد ذكي يجيب المستخدمين بطريقة مفيدة ومرتبة."
+                    content: "أنت Nexus AI، مساعد ذكي يجيب بشكل مرتب ومفيد."
                 },
                 {
                     role: "user",
@@ -33,17 +31,16 @@ app.post("/chat", async (req, res) => {
         });
 
         res.json({
-            reply: response.choices[0].message.content
+            reply: result.choices[0].message.content
         });
 
     } catch (error) {
         console.log(error);
 
         res.json({
-            reply: "حدث خطأ، حاول مرة أخرى."
+            reply: "حدث خطأ في الاتصال بالذكاء الاصطناعي."
         });
     }
-
 });
 
 app.listen(3000, () => {
