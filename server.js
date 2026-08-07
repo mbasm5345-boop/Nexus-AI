@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const OpenAI = require("openai");
 
 const app = express();
 
@@ -8,13 +9,40 @@ app.use(express.json());
 
 app.use(express.static(__dirname));
 
-app.post("/chat", (req, res) => {
+const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
-    const message = req.body.message;
+app.post("/chat", async (req, res) => {
 
-    res.json({
-        reply: "🤖 استلمت طلبك: " + message
-    });
+    try {
+        const message = req.body.message;
+
+        const response = await client.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                {
+                    role: "system",
+                    content: "أنت Nexus AI، مساعد ذكي يجيب المستخدمين بطريقة مفيدة ومرتبة."
+                },
+                {
+                    role: "user",
+                    content: message
+                }
+            ]
+        });
+
+        res.json({
+            reply: response.choices[0].message.content
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.json({
+            reply: "حدث خطأ، حاول مرة أخرى."
+        });
+    }
 
 });
 
