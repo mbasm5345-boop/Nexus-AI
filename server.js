@@ -5,7 +5,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
 app.use(express.static(__dirname));
 
 app.post("/chat", async (req, res) => {
@@ -23,7 +22,7 @@ app.post("/chat", async (req, res) => {
                 messages: [
                     {
                         role: "system",
-                        content: "أنت Nexus AI، مساعد ذكي ومفيد."
+                        content: "أنت Nexus AI مساعد ذكي."
                     },
                     {
                         role: "user",
@@ -35,17 +34,25 @@ app.post("/chat", async (req, res) => {
 
         const data = await response.json();
 
+        console.log(data);
+
+        if (data.error) {
+            return res.json({
+                reply: "خطأ من OpenAI: " + data.error.message
+            });
+        }
+
         res.json({
             reply: data.choices[0].message.content
         });
 
-    catch (error) {
-    console.log(error);
+    } catch (error) {
+        console.log(error);
 
-    res.json({
-        reply: "خطأ: " + error.message
-    });
-}
+        res.json({
+            reply: "خطأ في السيرفر: " + error.message
+        });
+    }
 });
 
 app.listen(3000, () => {
