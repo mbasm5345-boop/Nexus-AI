@@ -39,13 +39,13 @@ app.post("/chat", async (req, res) => {
             reply: data.choices[0].message.content
         });
 
-    } catch (error) {
-        console.log(error);
+    catch (error) {
+    console.log(error);
 
-        res.json({
-            reply: "حدث خطأ في الاتصال."
-        });
-    }
+    res.json({
+        reply: "خطأ: " + error.message
+    });
+}
 });
 
 app.listen(3000, () => {
