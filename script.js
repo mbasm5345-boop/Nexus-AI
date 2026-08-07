@@ -14,7 +14,7 @@ sendBtn.addEventListener("click", async function () {
 
     userInput.value = "";
 
-    let response = await fetch("http://localhost:3000/chat", {
+    let response = await fetch("https://nexus-ai-server-ro8a.onrender.com/chat", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
