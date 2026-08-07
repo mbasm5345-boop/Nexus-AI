@@ -5,6 +5,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
 app.use(express.static(__dirname));
 
 app.post("/chat", async (req, res) => {
@@ -21,6 +22,10 @@ app.post("/chat", async (req, res) => {
                 model: "gpt-4o-mini",
                 messages: [
                     {
+                        role: "system",
+                        content: "أنت Nexus AI، مساعد ذكي ومفيد."
+                    },
+                    {
                         role: "user",
                         content: message
                     }
@@ -36,6 +41,7 @@ app.post("/chat", async (req, res) => {
 
     } catch (error) {
         console.log(error);
+
         res.json({
             reply: "حدث خطأ في الاتصال."
         });
