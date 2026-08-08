@@ -9,7 +9,9 @@ const shareBtn = document.getElementById("shareBtn");
 
 let selectedFiles = [];
 
-/* إرفاق ملف */
+/* =========================
+إرفاق الملفات
+========================= */
 
 attachBtn.addEventListener("click", () => {
 
@@ -19,7 +21,9 @@ fileUpload.click();
 
 });
 
-/* اختيار الملفات */
+/* =========================
+اختيار الملفات
+========================= */
 
 fileUpload.addEventListener("change", () => {
 
@@ -41,7 +45,9 @@ selectedFiles.forEach(file => {
 
 });
 
-/* إضافة رسالة */
+/* =========================
+إضافة رسالة
+========================= */
 
 function addMessage(text, type, showPDF = false) {
 
@@ -59,86 +65,129 @@ content.textContent = text;
 message.appendChild(content);
 
 
-/* زر إنشاء PDF */
+/* =========================
+   زر إنشاء PDF
+========================= */
 
 if (showPDF && type === "ai") {
 
-    const pdfButton = document.createElement("button");
+    const pdfButton =
+        document.createElement("button");
 
-    pdfButton.textContent = "📥 تحميل الحل PDF";
+    pdfButton.textContent =
+        "📥 إنشاء ملف PDF للحل";
 
-    pdfButton.className = "pdf-download-btn";
-
-
-    pdfButton.addEventListener("click", async () => {
-
-        pdfButton.disabled = true;
-
-        pdfButton.textContent = "⏳ تجهيز PDF...";
+    pdfButton.className =
+        "pdf-download-btn";
 
 
-        try {
+    pdfButton.addEventListener(
+        "click",
+        async () => {
 
-            const response = await fetch("/create-pdf", {
+            pdfButton.disabled = true;
 
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    text: text
-                })
-
-            });
+            pdfButton.textContent =
+                "⏳ جاري إنشاء ملف PDF...";
 
 
-            const data = await response.json();
+            try {
+
+                const response =
+                    await fetch(
+                        "/create-pdf",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                text: text
+                            })
+                        }
+                    );
 
 
-            if (!response.ok || !data.url) {
+                const data =
+                    await response.json();
 
-                throw new Error(
-                    data.error || "تعذر إنشاء الملف."
+
+                if (
+                    !response.ok ||
+                    !data.url
+                ) {
+
+                    throw new Error(
+                        data.error ||
+                        "تعذر إنشاء ملف PDF."
+                    );
+
+                }
+
+
+                /* رابط حقيقي قابل للضغط */
+
+                const pdfLink =
+                    document.createElement("a");
+
+
+                pdfLink.href =
+                    data.url;
+
+
+                pdfLink.target =
+                    "_blank";
+
+
+                pdfLink.rel =
+                    "noopener";
+
+
+                pdfLink.textContent =
+                    "📄 فتح ملف الحل PDF";
+
+
+                pdfLink.className =
+                    "pdf-link";
+
+
+                message.appendChild(
+                    pdfLink
                 );
+
+
+                pdfButton.textContent =
+                    "✅ تم إنشاء الملف";
+
+
+                pdfButton.disabled =
+                    true;
+
+
+            } catch (error) {
+
+                console.error(error);
+
+
+                pdfButton.disabled =
+                    false;
+
+
+                pdfButton.textContent =
+                    "❌ حاول مرة أخرى";
 
             }
 
-
-            const link =
-                document.createElement("a");
-
-            link.href = data.url;
-
-            link.download = "Nexus-Solution.pdf";
-
-            document.body.appendChild(link);
-
-            link.click();
-
-            link.remove();
-
-
-            pdfButton.textContent =
-                "✅ تم تجهيز PDF";
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            pdfButton.disabled = false;
-
-            pdfButton.textContent =
-                "❌ حاول مرة أخرى";
-
         }
+    );
 
-    });
 
-
-    message.appendChild(pdfButton);
+    message.appendChild(
+        pdfButton
+    );
 
 }
 
@@ -150,7 +199,9 @@ chatBox.scrollTop =
 
 }
 
-/* التفكير */
+/* =========================
+رسالة التفكير
+========================= */
 
 function showThinking() {
 
@@ -163,18 +214,27 @@ thinking.className =
 thinking.id =
     "thinkingMessage";
 
+
 thinking.innerHTML = `
     <div class="message-content">
-        🤖 Nexus AI يقرأ ويحل...
+        🤖 Nexus AI يقرأ الملف ويحل الأسئلة...
     </div>
 `;
 
-chatBox.appendChild(thinking);
+
+chatBox.appendChild(
+    thinking
+);
+
 
 chatBox.scrollTop =
     chatBox.scrollHeight;
 
 }
+
+/* =========================
+إزالة رسالة التفكير
+========================= */
 
 function removeThinking() {
 
@@ -183,13 +243,18 @@ const thinking =
         "thinkingMessage"
     );
 
+
 if (thinking) {
+
     thinking.remove();
-}
 
 }
 
-/* إرسال */
+}
+
+/* =========================
+إرسال رسالة أو PDF
+========================= */
 
 async function sendMessage() {
 
@@ -201,9 +266,13 @@ if (
     !message &&
     selectedFiles.length === 0
 ) {
+
     return;
+
 }
 
+
+/* رسالة المستخدم */
 
 if (message) {
 
@@ -215,16 +284,23 @@ if (message) {
 }
 
 
-if (selectedFiles.length > 0) {
+/* الملفات */
 
-    selectedFiles.forEach(file => {
+if (
+    selectedFiles.length > 0
+) {
 
-        addMessage(
-            "📎 " + file.name,
-            "user"
-        );
+    selectedFiles.forEach(
+        file => {
 
-    });
+            addMessage(
+                "📎 تم إرفاق الملف: " +
+                file.name,
+                "user"
+            );
+
+        }
+    );
 
 }
 
@@ -239,57 +315,71 @@ try {
     let response;
 
 
-    /* PDF */
+    /* =========================
+       إرسال PDF
+    ========================= */
 
-    if (selectedFiles.length > 0) {
+    if (
+        selectedFiles.length > 0
+    ) {
 
         const formData =
             new FormData();
 
 
+        const file =
+            selectedFiles[0];
+
+
         formData.append(
             "file",
-            selectedFiles[0]
+            file
         );
 
 
         formData.append(
             "message",
             message ||
-            "حل جميع الأسئلة الموجودة في الملف مع شرح خطوات الحل."
+            "اقرأ الملف كاملًا وحل جميع الأسئلة الموجودة فيه مع شرح خطوات الحل."
         );
 
 
-        response = await fetch(
-            "/chat-file",
-            {
-                method: "POST",
-                body: formData
-            }
-        );
+        response =
+            await fetch(
+                "/chat-file",
+                {
+                    method: "POST",
+
+                    body: formData
+                }
+            );
 
     }
 
 
-    /* رسالة عادية */
+    /* =========================
+       رسالة عادية
+    ========================= */
 
     else {
 
-        response = await fetch(
-            "/chat",
-            {
-                method: "POST",
+        response =
+            await fetch(
+                "/chat",
+                {
+                    method: "POST",
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                body: JSON.stringify({
-                    message
-                })
-            }
-        );
+                    body: JSON.stringify({
+                        message:
+                            message
+                    })
+                }
+            );
 
     }
 
@@ -301,11 +391,15 @@ try {
     removeThinking();
 
 
+    /* =========================
+       عرض النتيجة
+    ========================= */
+
     if (!response.ok) {
 
         addMessage(
             data.reply ||
-            "حدث خطأ.",
+            "حدث خطأ أثناء معالجة الطلب.",
             "ai"
         );
 
@@ -313,8 +407,9 @@ try {
 
         addMessage(
             data.reply ||
-            "لم يصل رد.",
+            "لم يصل رد من Nexus AI.",
             "ai",
+
             selectedFiles.length > 0
         );
 
@@ -325,7 +420,9 @@ try {
 
     console.error(error);
 
+
     removeThinking();
+
 
     addMessage(
         "❌ حدث خطأ في الاتصال بالسيرفر.",
@@ -335,6 +432,8 @@ try {
 }
 
 
+/* تنظيف الاختيار */
+
 selectedFiles = [];
 
 fileUpload.value = "";
@@ -343,14 +442,18 @@ filePreview.innerHTML = "";
 
 }
 
-/* إرسال */
+/* =========================
+زر الإرسال
+========================= */
 
 sendBtn.addEventListener(
 "click",
 sendMessage
 );
 
-/* Ctrl + Enter */
+/* =========================
+Ctrl + Enter
+========================= */
 
 userInput.addEventListener(
 "keydown",
@@ -371,13 +474,16 @@ event => {
 
 );
 
-/* محادثة جديدة */
+/* =========================
+محادثة جديدة
+========================= */
 
 newChatBtn.addEventListener(
 "click",
 () => {
 
     chatBox.innerHTML = `
+
         <div class="welcome">
 
             <div class="welcome-icon">
@@ -413,7 +519,9 @@ newChatBtn.addEventListener(
             </div>
 
         </div>
+
     `;
+
 
     selectedFiles = [];
 
@@ -425,7 +533,9 @@ newChatBtn.addEventListener(
 
 );
 
-/* مشاركة المحادثة */
+/* =========================
+مشاركة المحادثة
+========================= */
 
 shareBtn.addEventListener(
 "click",
@@ -434,14 +544,17 @@ async () => {
     const text =
         chatBox.innerText;
 
+
     try {
 
         await navigator.clipboard
             .writeText(text);
 
+
         alert(
             "✅ تم نسخ المحادثة."
         );
+
 
     } catch {
 
