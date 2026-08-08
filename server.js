@@ -2,6 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 
@@ -38,23 +41,21 @@ const response = await fetch(
 
 أنت Nexus AI، مساعد ذكي للطلاب.
 
-أجب باللغة العربية عندما يكتب المستخدم بالعربية.
+أجب باللغة العربية عندما يكون السؤال بالعربية.
 
-إذا أرسل المستخدم ملفًا دراسيًا:
+عند التعامل مع ملف دراسي:
 
-- اقرأ محتوى الملف بعناية.
+- اقرأ المحتوى بعناية.
 
 - حدد الأسئلة والمطلوب.
 
-- حل الأسئلة خطوة بخطوة.
+- حل الأسئلة بالترتيب.
 
-- اشرح طريقة الحل بوضوح.
+- اشرح خطوات الحل.
 
-- لا تخترع معلومات غير موجودة في الملف.
+- راجع النتائج قبل تقديمها.
 
-- إذا كان جزء من الملف غير واضح، أخبر المستخدم بذلك بدل التخمين.
-
-- راجع الحسابات والنتائج قبل تقديمها.
+- لا تخترع معلومات غير موجودة.
   `
   },
   
@@ -70,8 +71,6 @@ const response = await fetch(
   
   const data = await response.json();
   
-  console.log(data);
-  
   if (data.error) {
   throw new Error(data.error);
   }
@@ -83,7 +82,7 @@ const response = await fetch(
   return data.choices[0].message.content;
   }
 
-/* المحادثة العادية */
+/* محادثة عادية */
 
 app.post("/chat", async (req, res) => {
 
@@ -91,16 +90,10 @@ try {
 
     const message = req.body.message || "";
 
-    if (!message.trim()) {
-        return res.json({
-            reply: "اكتب رسالتك أولًا."
-        });
-    }
-
     const reply = await askNexus(message);
 
     res.json({
-        reply: reply
+        reply
     });
 
 } catch (error) {
@@ -114,65 +107,59 @@ try {
 
 });
 
-/* رفع وقراءة ملفات PDF */
+/* قراءة PDF وحله */
 
 app.post("/chat-file", upload.single("file"), async (req, res) => {
 
 try {
 
     if (!req.file) {
+
         return res.status(400).json({
             reply: "لم يتم إرسال ملف."
         });
+
     }
-
-    const isPDF =
-        req.file.mimetype === "application/pdf" ||
-        req.file.originalname.toLowerCase().endsWith(".pdf");
-
-    if (!isPDF) {
-        return res.status(400).json({
-            reply: "حاليًا Nexus AI يدعم ملفات PDF فقط."
-        });
-    }
-
 
     const pdf = await pdfParse(req.file.buffer);
 
     const fileText = pdf.text.trim();
 
     if (!fileText) {
-        return res.status(400).json({
-            reply: "لم أستطع استخراج نص من هذا الملف. قد يكون ملف PDF عبارة عن صور."
-        });
-    }
 
+        return res.status(400).json({
+            reply: "لم أستطع استخراج النص من الملف."
+        });
+
+    }
 
     const userRequest =
         req.body.message ||
-        "اقرأ هذا الملف وحل الأسئلة الموجودة فيه مع شرح خطوات الحل.";
+        "حل جميع الأسئلة الموجودة في الملف مع شرح الخطوات.";
 
 
-    const fullPrompt = `
+    const prompt = `
 
-المستخدم أرسل ملف PDF ويريد مساعدتك فيه.
+المستخدم أرسل ملف PDF.
 
 طلب المستخدم:
 ${userRequest}
 
-محتوى ملف PDF:
+محتوى الملف:
 
 ${fileText}
 
-اقرأ المحتوى كاملًا، ثم نفذ طلب المستخدم.
-إذا كان الملف يحتوي على أسئلة أو تمارين، حلها بالترتيب مع توضيح الخطوات.
+---
+
+حل المطلوب كاملًا وبالترتيب.
+اكتب الحل بطريقة واضحة ومنظمة.
 `;
 
-    const reply = await askNexus(fullPrompt);
+    const reply = await askNexus(prompt);
 
 
     res.json({
-        reply: reply,
+        reply,
         fileName: req.file.originalname,
         pages: pdf.numpages
     });
@@ -183,19 +170,115 @@ ${fileText}
     console.log(error);
 
     res.status(500).json({
-        reply: "تعذر قراءة الملف أو معالجته: " + error.message
+        reply: "تعذر معالجة الملف: " + error.message
     });
 }
 
 });
 
-app.get("/health", (req, res) => {
-res.json({
-status: "ok",
-service: "Nexus AI"
+/* إنشاء PDF للحل */
+
+app.post("/create-pdf", async (req, res) => {
+
+try {
+
+    const text = req.body.text || "";
+
+    if (!text.trim()) {
+
+        return res.status(400).json({
+            error: "لا يوجد محتوى لإنشاء PDF."
+        });
+
+    }
+
+
+    const fileName =
+        "nexus-solution-" + Date.now() + ".pdf";
+
+    const filePath =
+        path.join("/tmp", fileName);
+
+
+    const doc = new PDFDocument({
+        margin: 50
+    });
+
+
+    const stream =
+        fs.createWriteStream(filePath);
+
+
+    doc.pipe(stream);
+
+
+    doc.fontSize(18)
+        .text("Nexus AI - Solution", {
+            align: "center"
+        });
+
+
+    doc.moveDown();
+
+
+    doc.fontSize(12)
+        .text(text, {
+            align: "left",
+            lineGap: 6
+        });
+
+
+    doc.end();
+
+
+    stream.on("finish", () => {
+
+        res.json({
+            url: "/download/" + fileName
+        });
+
+    });
+
+
+} catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+        error: error.message
+    });
+
+}
+
 });
+
+/* تحميل ملف PDF */
+
+app.get("/download/:file", (req, res) => {
+
+const filePath =
+    path.join("/tmp", req.params.file);
+
+if (!fs.existsSync(filePath)) {
+
+    return res.status(404).send("الملف غير موجود.");
+}
+
+res.download(filePath);
+
+});
+
+app.get("/health", (req, res) => {
+
+res.json({
+    status: "ok",
+    service: "Nexus AI"
+});
+
 });
 
 app.listen(3000, () => {
+
 console.log("Nexus AI running");
+
 });
