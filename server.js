@@ -11,26 +11,29 @@ app.post("/chat", async (req, res) => {
     try {
         const message = req.body.message;
 
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "gpt-4o-mini",
-                messages: [
-                    {
-                        role: "system",
-                        content: "أنت Nexus AI مساعد ذكي."
-                    },
-                    {
-                        role: "user",
-                        content: message
-                    }
-                ]
-            })
-        });
+        const response = await fetch(
+            "https://router.huggingface.co/v1/chat/completions",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${process.env.HF_TOKEN}`
+                },
+                body: JSON.stringify({
+                    model: "Qwen/Qwen2.5-7B-Instruct",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "أنت Nexus AI، مساعد ذكي ومفيد للطلاب."
+                        },
+                        {
+                            role: "user",
+                            content: message
+                        }
+                    ]
+                })
+            }
+        );
 
         const data = await response.json();
 
@@ -38,7 +41,7 @@ app.post("/chat", async (req, res) => {
 
         if (data.error) {
             return res.json({
-                reply: "خطأ من OpenAI: " + data.error.message
+                reply: "خطأ من Hugging Face: " + data.error
             });
         }
 
