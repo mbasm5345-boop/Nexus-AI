@@ -9,10 +9,14 @@ const shareBtn = document.getElementById("shareBtn");
 
 let selectedFiles = [];
 
-/* زر إرفاق الملفات */
+/* إرفاق ملف */
 
 attachBtn.addEventListener("click", () => {
+
+fileUpload.value = "";
+
 fileUpload.click();
+
 });
 
 /* اختيار الملفات */
@@ -32,17 +36,19 @@ selectedFiles.forEach(file => {
     item.textContent = "📎 " + file.name;
 
     filePreview.appendChild(item);
+
 });
 
 });
 
 /* إضافة رسالة */
 
-function addMessage(text, type) {
+function addMessage(text, type, showPDF = false) {
 
 const message = document.createElement("div");
 
 message.className = "message " + type;
+
 
 const content = document.createElement("div");
 
@@ -52,39 +58,130 @@ content.textContent = text;
 
 message.appendChild(content);
 
-chatBox.appendChild(message);
 
-chatBox.scrollTop = chatBox.scrollHeight;
+/* زر إنشاء PDF */
+
+if (showPDF && type === "ai") {
+
+    const pdfButton = document.createElement("button");
+
+    pdfButton.textContent = "📥 تحميل الحل PDF";
+
+    pdfButton.className = "pdf-download-btn";
+
+
+    pdfButton.addEventListener("click", async () => {
+
+        pdfButton.disabled = true;
+
+        pdfButton.textContent = "⏳ تجهيز PDF...";
+
+
+        try {
+
+            const response = await fetch("/create-pdf", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    text: text
+                })
+
+            });
+
+
+            const data = await response.json();
+
+
+            if (!response.ok || !data.url) {
+
+                throw new Error(
+                    data.error || "تعذر إنشاء الملف."
+                );
+
+            }
+
+
+            const link =
+                document.createElement("a");
+
+            link.href = data.url;
+
+            link.download = "Nexus-Solution.pdf";
+
+            document.body.appendChild(link);
+
+            link.click();
+
+            link.remove();
+
+
+            pdfButton.textContent =
+                "✅ تم تجهيز PDF";
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            pdfButton.disabled = false;
+
+            pdfButton.textContent =
+                "❌ حاول مرة أخرى";
+
+        }
+
+    });
+
+
+    message.appendChild(pdfButton);
 
 }
 
-/* رسالة التفكير */
+
+chatBox.appendChild(message);
+
+chatBox.scrollTop =
+    chatBox.scrollHeight;
+
+}
+
+/* التفكير */
 
 function showThinking() {
 
-const thinking = document.createElement("div");
+const thinking =
+    document.createElement("div");
 
-thinking.className = "message ai";
+thinking.className =
+    "message ai";
 
-thinking.id = "thinkingMessage";
+thinking.id =
+    "thinkingMessage";
 
 thinking.innerHTML = `
     <div class="message-content">
-        🤖 Nexus AI يقرأ الملف ويحل الأسئلة...
+        🤖 Nexus AI يقرأ ويحل...
     </div>
 `;
 
 chatBox.appendChild(thinking);
 
-chatBox.scrollTop = chatBox.scrollHeight;
+chatBox.scrollTop =
+    chatBox.scrollHeight;
 
 }
 
-/* إزالة التفكير */
-
 function removeThinking() {
 
-const thinking = document.getElementById("thinkingMessage");
+const thinking =
+    document.getElementById(
+        "thinkingMessage"
+    );
 
 if (thinking) {
     thinking.remove();
@@ -92,32 +189,38 @@ if (thinking) {
 
 }
 
-/* إرسال رسالة أو ملف */
+/* إرسال */
 
 async function sendMessage() {
 
-const message = userInput.value.trim();
+const message =
+    userInput.value.trim();
 
-if (!message && selectedFiles.length === 0) {
+
+if (
+    !message &&
+    selectedFiles.length === 0
+) {
     return;
 }
 
 
-/* إظهار رسالة المستخدم */
-
 if (message) {
-    addMessage(message, "user");
+
+    addMessage(
+        message,
+        "user"
+    );
+
 }
 
-
-/* إذا كان هناك ملف */
 
 if (selectedFiles.length > 0) {
 
     selectedFiles.forEach(file => {
 
         addMessage(
-            "📎 تم إرفاق الملف: " + file.name,
+            "📎 " + file.name,
             "user"
         );
 
@@ -140,51 +243,60 @@ try {
 
     if (selectedFiles.length > 0) {
 
-        const file = selectedFiles[0];
+        const formData =
+            new FormData();
 
-        const formData = new FormData();
-
-        formData.append("file", file);
 
         formData.append(
-            "message",
-            message || "اقرأ الملف وحل جميع الأسئلة الموجودة فيه مع شرح خطوات الحل."
+            "file",
+            selectedFiles[0]
         );
 
 
-        response = await fetch("/chat-file", {
+        formData.append(
+            "message",
+            message ||
+            "حل جميع الأسئلة الموجودة في الملف مع شرح خطوات الحل."
+        );
 
-            method: "POST",
 
-            body: formData
-
-        });
+        response = await fetch(
+            "/chat-file",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
 
     }
 
 
-    /* محادثة عادية */
+    /* رسالة عادية */
 
     else {
 
-        response = await fetch("/chat", {
+        response = await fetch(
+            "/chat",
+            {
+                method: "POST",
 
-            method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                message: message
-            })
-
-        });
+                body: JSON.stringify({
+                    message
+                })
+            }
+        );
 
     }
 
 
-    const data = await response.json();
+    const data =
+        await response.json();
+
 
     removeThinking();
 
@@ -192,15 +304,18 @@ try {
     if (!response.ok) {
 
         addMessage(
-            data.reply || "حدث خطأ أثناء معالجة الطلب.",
+            data.reply ||
+            "حدث خطأ.",
             "ai"
         );
 
     } else {
 
         addMessage(
-            data.reply || "لم يصل رد من Nexus AI.",
-            "ai"
+            data.reply ||
+            "لم يصل رد.",
+            "ai",
+            selectedFiles.length > 0
         );
 
     }
@@ -213,15 +328,13 @@ try {
     removeThinking();
 
     addMessage(
-        "❌ حدث خطأ أثناء الاتصال بالسيرفر.",
+        "❌ حدث خطأ في الاتصال بالسيرفر.",
         "ai"
     );
 
 }
 
 
-/* تنظيف الملفات */
-
 selectedFiles = [];
 
 fileUpload.value = "";
@@ -230,76 +343,114 @@ filePreview.innerHTML = "";
 
 }
 
-/* زر الإرسال */
+/* إرسال */
 
-sendBtn.addEventListener("click", sendMessage);
+sendBtn.addEventListener(
+"click",
+sendMessage
+);
 
 /* Ctrl + Enter */
 
-userInput.addEventListener("keydown", (event) => {
+userInput.addEventListener(
+"keydown",
+event => {
 
-if (event.key === "Enter" && event.ctrlKey) {
+    if (
+        event.key === "Enter" &&
+        event.ctrlKey
+    ) {
 
-    event.preventDefault();
+        event.preventDefault();
 
-    sendMessage();
+        sendMessage();
+
+    }
 
 }
 
-});
+);
 
 /* محادثة جديدة */
 
-newChatBtn.addEventListener("click", () => {
+newChatBtn.addEventListener(
+"click",
+() => {
 
-chatBox.innerHTML = `
-    <div class="welcome">
+    chatBox.innerHTML = `
+        <div class="welcome">
 
-        <div class="welcome-icon">🤖</div>
+            <div class="welcome-icon">
+                🤖
+            </div>
 
-        <h2>أهلًا بك في Nexus AI</h2>
+            <h2>
+                أهلًا بك في Nexus AI
+            </h2>
 
-        <p>كيف يمكنني مساعدتك اليوم؟</p>
+            <p>
+                كيف يمكنني مساعدتك اليوم؟
+            </p>
 
-        <div class="quick-actions">
+            <div class="quick-actions">
 
-            <button>📚 حل واجب</button>
+                <button>
+                    📚 حل واجب
+                </button>
 
-            <button>📝 كتابة تقرير</button>
+                <button>
+                    📝 كتابة تقرير
+                </button>
 
-            <button>📄 تحليل ملف</button>
+                <button>
+                    📄 تحليل ملف
+                </button>
 
-            <button>💡 شرح درس</button>
+                <button>
+                    💡 شرح درس
+                </button>
+
+            </div>
 
         </div>
+    `;
 
-    </div>
-`;
+    selectedFiles = [];
 
-selectedFiles = [];
+    fileUpload.value = "";
 
-fileUpload.value = "";
-
-filePreview.innerHTML = "";
-
-});
-
-/* مشاركة المحادثة */
-
-shareBtn.addEventListener("click", async () => {
-
-const text = chatBox.innerText;
-
-try {
-
-    await navigator.clipboard.writeText(text);
-
-    alert("✅ تم نسخ المحادثة.");
-
-} catch {
-
-    alert("تعذر نسخ المحادثة.");
+    filePreview.innerHTML = "";
 
 }
 
-});
+);
+
+/* مشاركة المحادثة */
+
+shareBtn.addEventListener(
+"click",
+async () => {
+
+    const text =
+        chatBox.innerText;
+
+    try {
+
+        await navigator.clipboard
+            .writeText(text);
+
+        alert(
+            "✅ تم نسخ المحادثة."
+        );
+
+    } catch {
+
+        alert(
+            "تعذر نسخ المحادثة."
+        );
+
+    }
+
+}
+
+);
